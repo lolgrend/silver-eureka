@@ -19,9 +19,9 @@ export class TelnetServer {
   }
 
   start(): void {
-    this.server.listen(this.port, () => {
-      console.log(`Telnet server listening on port ${this.port}`);
-      console.log(`Connect with: telnet localhost ${this.port}`);
+    this.server.listen(this.port, '0.0.0.0', () => {
+      console.log(`Telnet server listening on 0.0.0.0:${this.port}`);
+      console.log(`Connect with: telnet <your-host> ${this.port}`);
     });
   }
 
@@ -105,6 +105,8 @@ export class TelnetServer {
         return game.move('west');
       case 'look': case 'l':
         return game.getLook();
+      case 'map': case 'm':
+        return game.getMap();
       case 'inventory': case 'i':
         return game.getInventory();
       case 'stats':
@@ -132,10 +134,11 @@ export class TelnetServer {
 Movement:
   n, s, e, w  - Move north, south, east, west
   look        - Examine surroundings
+  map         - View discovered areas
 
 Inventory:
   inventory   - View inventory (or 'i')
-  use <item>  - Use an item
+  use <item>  - Use an item (medkit, weapon, armor)
   read <item> - Read a data log
 
 Combat:

@@ -41,12 +41,14 @@ export interface Item {
   content?: string; // For data logs
   healthRestore?: number;
   strengthBonus?: number;
+  defenseBonus?: number;
 }
 
 export enum ItemType {
   DATA_LOG = 'data_log',
   MED_KIT = 'med_kit',
   WEAPON_UPGRADE = 'weapon_upgrade',
+  ARMOR_UPGRADE = 'armor_upgrade',
   QUEST_ITEM = 'quest_item'
 }
 
@@ -54,6 +56,7 @@ export interface PlayerStats {
   health: number;
   maxHealth: number;
   strength: number;
+  defense: number;
   xp: number;
   level: number;
 }
