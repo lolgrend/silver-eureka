@@ -19,9 +19,9 @@ export class TelnetServer {
   }
 
   start(): void {
-    this.server.listen(this.port, () => {
-      console.log(`Telnet server listening on port ${this.port}`);
-      console.log(`Connect with: telnet localhost ${this.port}`);
+    this.server.listen(this.port, '0.0.0.0', () => {
+      console.log(`Telnet server listening on 0.0.0.0:${this.port}`);
+      console.log(`Connect with: telnet <your-host> ${this.port}`);
     });
   }
 

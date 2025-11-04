@@ -153,8 +153,9 @@ Other:
   }
 
   start(): void {
-    this.httpServer.listen(this.port, () => {
-      console.log(`Web server listening on http://localhost:${this.port}`);
+    this.httpServer.listen(this.port, '0.0.0.0', () => {
+      console.log(`Web server listening on http://0.0.0.0:${this.port}`);
+      console.log(`Access from outside: http://<your-host>:${this.port}`);
     });
   }
 
