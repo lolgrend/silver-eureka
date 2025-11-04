@@ -197,21 +197,28 @@ Good luck, survivor. You're going to need it...
     }
 
     const result = Combat.fight(this.player, tile.enemy);
-    let msg = '\n--- COMBAT ---\n' + result.message;
+    let msg = '\n--- COMBAT ROUND ---\n' + result.message;
 
     if (result.enemyDefeated) {
       tile.enemy = undefined;
       this.state.inCombat = false;
-      msg += '\nThe path is clear.\n';
+      msg += '\n✓ Victory! The enemy has been defeated!\n';
+      msg += 'The path is clear.\n';
+    } else {
+      // Enemy still alive - show status and options
+      msg += `\n${tile.enemy.name} Health: ${tile.enemy.health}/${tile.enemy.maxHealth}`;
+      msg += `\nYour Health: ${this.player.getHealth()}/${this.player.getMaxHealth()}`;
+      msg += '\n\nWhat will you do? [attack] to fight, [flee] to escape';
     }
 
     if (result.playerDied) {
       this.state.gameOver = true;
       msg += '\n\nGAME OVER - You have died aboard the Prometheus station.\n';
       msg += 'Your story ends here...\n';
+    } else if (!result.enemyDefeated) {
+      // Show player health after combat round
+      msg += `\n`;
     }
-
-    msg += `\nYour Health: ${this.player.getHealth()}/${this.player.getMaxHealth()}`;
 
     return msg;
   }

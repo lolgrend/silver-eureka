@@ -8,8 +8,8 @@ export class Player {
   constructor(startPosition: Position) {
     this.position = startPosition;
     this.stats = {
-      health: 100,
-      maxHealth: 100,
+      health: 50,
+      maxHealth: 50,
       strength: 5,
       defense: 0,
       xp: 0,
