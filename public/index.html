@@ -244,6 +244,10 @@
         <span class="stat-value" id="strength">5</span>
       </div>
       <div class="stat">
+        <span class="stat-label">DEF:</span>
+        <span class="stat-value" id="defense">0</span>
+      </div>
+      <div class="stat">
         <span class="stat-label">LVL:</span>
         <span class="stat-value" id="level">1</span>
       </div>
@@ -284,6 +288,7 @@
     const healthFill = document.getElementById('health-fill');
     const healthText = document.getElementById('health-text');
     const strengthElem = document.getElementById('strength');
+    const defenseElem = document.getElementById('defense');
     const levelElem = document.getElementById('level');
     const xpElem = document.getElementById('xp');
 
@@ -310,6 +315,7 @@
       healthFill.style.width = healthPercent + '%';
       healthText.textContent = `${stats.health}/${stats.maxHealth}`;
       strengthElem.textContent = stats.strength;
+      defenseElem.textContent = stats.defense;
       levelElem.textContent = stats.level;
       xpElem.textContent = stats.xp;
 

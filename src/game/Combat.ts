@@ -46,9 +46,17 @@ export class Combat {
       enemy.health = Math.max(0, enemy.health);
       message += `You strike ${enemy.name} for ${enemyDamage} damage!\n`;
     } else if (enemyTotal > playerTotal) {
-      playerDamage = enemyTotal - playerTotal;
+      const rawDamage = enemyTotal - playerTotal;
+      const defense = player.getDefense();
+      playerDamage = Math.max(1, rawDamage - defense); // Always at least 1 damage
       player.takeDamage(playerDamage);
-      message += `${enemy.name} hits you for ${playerDamage} damage!\n`;
+
+      if (defense > 0) {
+        message += `${enemy.name} attacks for ${rawDamage} damage, but your armor absorbs ${defense}!\n`;
+        message += `You take ${playerDamage} damage!\n`;
+      } else {
+        message += `${enemy.name} hits you for ${playerDamage} damage!\n`;
+      }
     } else {
       message += `Both attacks clash! No damage dealt.\n`;
     }

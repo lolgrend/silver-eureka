@@ -40,15 +40,28 @@ export class GameEngine {
 ╚════════════════════════════════════════════════════════════════╝
 
 You awaken in a cryopod aboard the deep space station "Prometheus."
-The emergency lights flicker. Silence. No crew. No sounds of life.
+Your head throbs. The emergency lights pulse red. Something is wrong.
 
-Only the eerie hum of failing systems and... something else.
-The station AI, NEXUS, has gone rogue. The crew is gone.
-Your mission: Survive. Discover what happened. Escape.
+The station is silent. No crew. No sounds of life. Only the eerie
+hum of failing systems and... something else moving in the darkness.
+
+[!] MISSION BRIEFING [!]
+The station AI, NEXUS, has gone rogue and killed or corrupted the crew.
+Data logs scattered throughout the station tell a story of horror.
+
+YOUR OBJECTIVES:
+• SURVIVE: Fight or flee from malfunctioning robots and alien creatures
+• EXPLORE: Search the station for weapons, armor, and medical supplies
+• INVESTIGATE: Read data logs to uncover what happened
+• ESCAPE: Find a way to shut down NEXUS and escape with your life
+
+TIP: Armor reduces damage taken. Weapons increase damage dealt.
+     Level up by defeating enemies to become stronger!
 
 Commands:
   n/s/e/w     - Move north/south/east/west
   look        - Examine your surroundings
+  map         - View discovered areas (x to close)
   inventory   - Check your inventory (i)
   stats       - View your stats
   use <item>  - Use an item from inventory
@@ -58,7 +71,7 @@ Commands:
   help        - Show this help
   quit        - Exit game
 
-Press any key to begin your journey...
+Good luck, survivor. You're going to need it...
 `;
   }
 
@@ -271,6 +284,15 @@ Press any key to begin your journey...
         }
         break;
 
+      case ItemType.ARMOR_UPGRADE:
+        if (item.defenseBonus) {
+          this.player.addDefense(item.defenseBonus);
+          msg = `You equip ${item.name}!\n`;
+          msg += `Defense increased by ${item.defenseBonus}! New defense: ${this.player.getDefense()}`;
+          this.player.removeItem(item.id);
+        }
+        break;
+
       case ItemType.DATA_LOG:
         msg = `Use "read ${itemName}" to read data logs.`;
         break;
@@ -319,10 +341,54 @@ Press any key to begin your journey...
 === CHARACTER STATS ===
 Health:   ${p.getHealth()}/${p.getMaxHealth()}
 Strength: ${p.getStrength()}
+Defense:  ${p.getDefense()}
 Level:    ${p.getLevel()}
 XP:       ${p.getXP()}/${p.getLevel() * 50} (to next level)
 Position: (${p.getPosition().x}, ${p.getPosition().y})
 `;
+  }
+
+  getMap(): string {
+    const playerPos = this.player.getPosition();
+    const mapWidth = this.map.getWidth();
+    const mapHeight = this.map.getHeight();
+
+    let mapStr = '\n=== DISCOVERED MAP ===\n';
+    mapStr += 'Legend: @ = You, # = Wall, . = Floor, E = Enemy, ? = Item\n';
+    mapStr += '        B = Bridge, M = Medbay, C = Cargo, Q = Quarters\n\n';
+
+    for (let y = 0; y < mapHeight; y++) {
+      for (let x = 0; x < mapWidth; x++) {
+        const pos = { x, y };
+        const tile = this.map.getTile(pos);
+
+        if (x === playerPos.x && y === playerPos.y) {
+          mapStr += '@';
+        } else if (!tile || !tile.discovered) {
+          mapStr += ' ';
+        } else if (tile.type === TileType.WALL) {
+          mapStr += '#';
+        } else if (tile.enemy) {
+          mapStr += 'E';
+        } else if (tile.item) {
+          mapStr += '?';
+        } else {
+          switch (tile.type) {
+            case TileType.BRIDGE: mapStr += 'B'; break;
+            case TileType.MEDBAY: mapStr += 'M'; break;
+            case TileType.CARGO: mapStr += 'C'; break;
+            case TileType.QUARTERS: mapStr += 'Q'; break;
+            case TileType.ENGINEERING: mapStr += 'N'; break;
+            case TileType.AIRLOCK: mapStr += 'A'; break;
+            default: mapStr += '.';
+          }
+        }
+      }
+      mapStr += '\n';
+    }
+
+    mapStr += '\nType any command to continue...';
+    return mapStr;
   }
 
   getState(): GameState {

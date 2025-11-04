@@ -11,6 +11,7 @@ export class Player {
       health: 100,
       maxHealth: 100,
       strength: 5,
+      defense: 0,
       xp: 0,
       level: 1
     };
@@ -57,6 +58,10 @@ export class Player {
     this.stats.strength += amount;
   }
 
+  addDefense(amount: number): void {
+    this.stats.defense += amount;
+  }
+
   addXP(amount: number): void {
     this.stats.xp += amount;
 
@@ -80,6 +85,10 @@ export class Player {
 
   getStrength(): number {
     return this.stats.strength;
+  }
+
+  getDefense(): number {
+    return this.stats.defense;
   }
 
   getHealth(): number {

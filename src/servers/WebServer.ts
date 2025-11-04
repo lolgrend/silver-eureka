@@ -75,6 +75,7 @@ export class WebServer {
           health: game['player'].getHealth(),
           maxHealth: game['player'].getMaxHealth(),
           strength: game['player'].getStrength(),
+          defense: game['player'].getDefense(),
           level: game['player'].getLevel(),
           xp: game['player'].getXP()
         });
@@ -111,6 +112,8 @@ export class WebServer {
         return game.move('west');
       case 'look': case 'l':
         return game.getLook();
+      case 'map': case 'm':
+        return game.getMap();
       case 'inventory': case 'i':
         return game.getInventory();
       case 'stats':
@@ -136,10 +139,11 @@ export class WebServer {
 Movement:
   n, s, e, w  - Move north, south, east, west
   look        - Examine surroundings
+  map         - View discovered areas
 
 Inventory:
   inventory   - View inventory (or 'i')
-  use <item>  - Use an item
+  use <item>  - Use an item (medkit, weapon, armor)
   read <item> - Read a data log
 
 Combat:
