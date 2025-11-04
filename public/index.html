@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Derelict Station - A Sci-Fi Roguelike</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0a0a;
+      color: #00ff00;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #header {
+      background: #1a1a1a;
+      border-bottom: 2px solid #00ff00;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #header h1 {
+      font-size: 18px;
+      color: #00ff00;
+      text-shadow: 0 0 10px #00ff00;
+    }
+
+    #stats {
+      display: flex;
+      gap: 20px;
+      font-size: 14px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .stat-label {
+      color: #00aa00;
+    }
+
+    .stat-value {
+      color: #00ff00;
+      font-weight: bold;
+    }
+
+    #health-bar {
+      width: 100px;
+      height: 10px;
+      background: #003300;
+      border: 1px solid #00ff00;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #health-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff00, #00aa00);
+      width: 100%;
+      transition: width 0.3s;
+    }
+
+    #container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #output-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow-y: auto;
+      background: #0a0a0a;
+      scrollbar-width: thin;
+      scrollbar-color: #00ff00 #1a1a1a;
+    }
+
+    #output-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #output-container::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+
+    #output-container::-webkit-scrollbar-thumb {
+      background: #00ff00;
+    }
+
+    #output {
+      white-space: pre-wrap;
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .output-line {
+      margin-bottom: 5px;
+    }
+
+    .welcome {
+      color: #00aaff;
+      text-shadow: 0 0 5px #00aaff;
+    }
+
+    .combat {
+      color: #ff0000;
+      text-shadow: 0 0 5px #ff0000;
+    }
+
+    .item {
+      color: #ffaa00;
+      text-shadow: 0 0 5px #ffaa00;
+    }
+
+    .command {
+      color: #00ff00;
+    }
+
+    #input-area {
+      background: #1a1a1a;
+      border-top: 2px solid #00ff00;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #prompt {
+      color: #00ff00;
+      font-weight: bold;
+    }
+
+    #input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      outline: none;
+    }
+
+    #input::placeholder {
+      color: #006600;
+    }
+
+    .blink {
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    #sidebar {
+      width: 300px;
+      background: #0f0f0f;
+      border-left: 2px solid #00ff00;
+      padding: 20px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    #sidebar h2 {
+      color: #00ff00;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 5px #00ff00;
+    }
+
+    #quick-commands {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .quick-btn {
+      background: #1a1a1a;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 8px;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 12px;
+    }
+
+    .quick-btn:hover {
+      background: #00ff00;
+      color: #000;
+      box-shadow: 0 0 10px #00ff00;
+    }
+
+    .quick-btn:active {
+      transform: scale(0.95);
+    }
+
+    @media (max-width: 768px) {
+      #header {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      #stats {
+        font-size: 12px;
+      }
+
+      #sidebar {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>⚡ DERELICT STATION ⚡</h1>
+    <div id="stats">
+      <div class="stat">
+        <span class="stat-label">HP:</span>
+        <div id="health-bar">
+          <div id="health-fill"></div>
+        </div>
+        <span class="stat-value" id="health-text">100/100</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">STR:</span>
+        <span class="stat-value" id="strength">5</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">LVL:</span>
+        <span class="stat-value" id="level">1</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">XP:</span>
+        <span class="stat-value" id="xp">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="container">
+    <div id="output-container">
+      <div id="output"></div>
+    </div>
+  </div>
+
+  <div id="input-area">
+    <span id="prompt">&gt;</span>
+    <input type="text" id="input" placeholder="Type a command..." autocomplete="off">
+  </div>
+
+  <div id="quick-commands">
+    <button class="quick-btn" onclick="sendCommand('n')">North (N)</button>
+    <button class="quick-btn" onclick="sendCommand('s')">South (S)</button>
+    <button class="quick-btn" onclick="sendCommand('e')">East (E)</button>
+    <button class="quick-btn" onclick="sendCommand('w')">West (W)</button>
+    <button class="quick-btn" onclick="sendCommand('look')">Look</button>
+    <button class="quick-btn" onclick="sendCommand('inventory')">Inventory</button>
+    <button class="quick-btn" onclick="sendCommand('attack')">Attack</button>
+    <button class="quick-btn" onclick="sendCommand('help')">Help</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const output = document.getElementById('output');
+    const input = document.getElementById('input');
+    const healthFill = document.getElementById('health-fill');
+    const healthText = document.getElementById('health-text');
+    const strengthElem = document.getElementById('strength');
+    const levelElem = document.getElementById('level');
+    const xpElem = document.getElementById('xp');
+
+    let commandHistory = [];
+    let historyIndex = -1;
+
+    // Focus input on load
+    window.addEventListener('load', () => {
+      input.focus();
+    });
+
+    // Handle output from server
+    socket.on('output', (data) => {
+      const line = document.createElement('div');
+      line.className = 'output-line ' + (data.type || '');
+      line.textContent = data.text;
+      output.appendChild(line);
+      output.parentElement.scrollTop = output.parentElement.scrollHeight;
+    });
+
+    // Handle stats update
+    socket.on('stats', (stats) => {
+      const healthPercent = (stats.health / stats.maxHealth) * 100;
+      healthFill.style.width = healthPercent + '%';
+      healthText.textContent = `${stats.health}/${stats.maxHealth}`;
+      strengthElem.textContent = stats.strength;
+      levelElem.textContent = stats.level;
+      xpElem.textContent = stats.xp;
+
+      // Change health bar color based on health
+      if (healthPercent > 50) {
+        healthFill.style.background = 'linear-gradient(90deg, #00ff00, #00aa00)';
+      } else if (healthPercent > 25) {
+        healthFill.style.background = 'linear-gradient(90deg, #ffaa00, #ff8800)';
+      } else {
+        healthFill.style.background = 'linear-gradient(90deg, #ff0000, #aa0000)';
+      }
+    });
+
+    // Handle game over
+    socket.on('gameOver', (data) => {
+      const line = document.createElement('div');
+      line.className = 'output-line combat';
+      line.textContent = '\n' + data.message;
+      output.appendChild(line);
+      output.parentElement.scrollTop = output.parentElement.scrollHeight;
+    });
+
+    // Handle input
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const command = input.value.trim();
+        if (command) {
+          sendCommand(command);
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (historyIndex < commandHistory.length - 1) {
+          historyIndex++;
+          input.value = commandHistory[historyIndex];
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (historyIndex > 0) {
+          historyIndex--;
+          input.value = commandHistory[historyIndex];
+        } else {
+          historyIndex = -1;
+          input.value = '';
+        }
+      }
+    });
+
+    function sendCommand(command) {
+      // Show command in output
+      const cmdLine = document.createElement('div');
+      cmdLine.className = 'output-line command';
+      cmdLine.textContent = '> ' + command;
+      output.appendChild(cmdLine);
+
+      // Add to history
+      commandHistory.unshift(command);
+      if (commandHistory.length > 50) {
+        commandHistory.pop();
+      }
+      historyIndex = -1;
+
+      // Send to server
+      socket.emit('command', command);
+
+      // Clear input
+      input.value = '';
+      output.parentElement.scrollTop = output.parentElement.scrollHeight;
+    }
+
+    // Connection status
+    socket.on('connect', () => {
+      console.log('Connected to server');
+    });
+
+    socket.on('disconnect', () => {
+      const line = document.createElement('div');
+      line.className = 'output-line combat';
+      line.textContent = '\n[!] Disconnected from server. Refresh to reconnect.';
+      output.appendChild(line);
+    });
+  </script>
+</body>
+</html>
