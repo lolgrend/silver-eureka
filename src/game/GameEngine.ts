@@ -4,6 +4,7 @@ import { Combat, CombatResult } from './Combat';
 import { Position, TileType, ItemType } from './types';
 import { SearchDescriptions, ItemFactory } from './Story';
 import { SeededRandom } from './SeededRandom';
+import { NexusTaunts, RandomEventSystem } from './NexusSystem';
 
 export interface GameState {
   inCombat: boolean;
@@ -17,10 +18,15 @@ export class GameEngine {
   private state: GameState;
   private sessionSeed: string;
   private rng: SeededRandom;
+  private nexusTaunts: NexusTaunts;
+  private randomEvents: RandomEventSystem;
+  private turnCounter: number = 0;
 
   constructor(sessionId: string) {
     this.sessionSeed = sessionId;
     this.rng = new SeededRandom(sessionId + '_search'); // Separate RNG for search
+    this.nexusTaunts = new NexusTaunts(sessionId);
+    this.randomEvents = new RandomEventSystem(sessionId);
     this.map = new MapGenerator(sessionId);
     const startPos = this.map.getRandomWalkablePosition();
     this.player = new Player(startPos);
@@ -192,6 +198,18 @@ Good luck, survivor. You're going to need it...
 
     msg += '\n' + this.getLook();
 
+    // NEXUS taunt
+    const taunt = this.getNexusTaunt();
+    if (taunt) {
+      msg += taunt;
+    }
+
+    // Random event
+    const event = this.getRandomEvent();
+    if (event) {
+      msg += '\n' + event;
+    }
+
     return msg;
   }
 
@@ -220,6 +238,12 @@ Good luck, survivor. You're going to need it...
       this.state.inCombat = false;
       msg += '\n✓ Victory! The enemy has been defeated!\n';
       msg += 'The path is clear.\n';
+
+      // NEXUS taunt after combat
+      const taunt = this.getNexusTaunt();
+      if (taunt) {
+        msg += taunt;
+      }
     } else {
       // Enemy still alive - show status and options
       msg += `\n${tile.enemy.name} Health: ${tile.enemy.health}/${tile.enemy.maxHealth}`;
@@ -576,5 +600,40 @@ Position: (${p.getPosition().x}, ${p.getPosition().y})
 
   isGameOver(): boolean {
     return this.state.gameOver;
+  }
+
+  private getNexusTaunt(): string {
+    this.turnCounter++;
+
+    if (!this.nexusTaunts.shouldTaunt(this.turnCounter)) {
+      return '';
+    }
+
+    const inventory = this.player.getInventory();
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    const context = {
+      playerHealth: this.player.getHealth(),
+      playerMaxHealth: this.player.getMaxHealth(),
+      hasKeycardAlpha: inventory.some(item => item.id === 'keycard_alpha'),
+      hasKeycardBeta: inventory.some(item => item.id === 'keycard_beta'),
+      inCombat: this.state.inCombat,
+      currentRoomType: tile?.type as string
+    };
+
+    const taunt = this.nexusTaunts.getTaunt(context);
+    return '\n' + taunt + '\n';
+  }
+
+  private getRandomEvent(): string {
+    const healthPercent = this.player.getHealth() / this.player.getMaxHealth();
+
+    if (!this.randomEvents.shouldTriggerEvent(this.turnCounter, healthPercent)) {
+      return '';
+    }
+
+    const event = this.randomEvents.getRandomEvent(healthPercent);
+    return '\n' + event.message + '\n';
   }
 }

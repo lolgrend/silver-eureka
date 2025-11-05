@@ -3,13 +3,7 @@ import { SeededRandom } from './SeededRandom';
 
 export class EnemyFactory {
   private static enemyTemplates: Omit<Enemy, 'id' | 'health'>[] = [
-    {
-      name: 'Malfunctioning Security Bot',
-      description: 'A security robot with sparking wires, its targeting system glitching.',
-      maxHealth: 20,
-      strength: 4,
-      xpReward: 15
-    },
+    // WEAK ENEMIES (Easy)
     {
       name: 'Feral Station Cat',
       description: 'A cat that has gone feral, hissing aggressively. Its eyes glow in the dark.',
@@ -18,46 +12,131 @@ export class EnemyFactory {
       xpReward: 8
     },
     {
+      name: 'Cleaning Drone',
+      description: 'A small hovering drone. Its cleaning solution nozzles spray acid now.',
+      maxHealth: 8,
+      strength: 2,
+      xpReward: 6
+    },
+    {
+      name: 'Cargo Loader Bot (Damaged)',
+      description: 'A loading bot with one arm torn off. It swings the remaining arm wildly.',
+      maxHealth: 12,
+      strength: 3,
+      xpReward: 10
+    },
+
+    // MEDIUM ENEMIES (Normal)
+    {
       name: 'Rogue Maintenance Drone',
-      description: 'A maintenance drone with malfunctioning repair tools that now see you as debris.',
+      description: 'A maintenance drone with malfunctioning repair tools that now see you as debris. Sparks fly from its welding torch.',
       maxHealth: 15,
       strength: 3,
       xpReward: 12
     },
     {
-      name: 'Corrupted AI Core Fragment',
-      description: 'A floating sphere of corrupted code and energy, remnant of the station AI.',
-      maxHealth: 30,
-      strength: 6,
-      xpReward: 25
-    },
-    {
-      name: 'Alien Parasite',
-      description: 'A writhing, multi-tentacled creature that must have come from the cargo hold.',
-      maxHealth: 25,
-      strength: 5,
-      xpReward: 20
+      name: 'Malfunctioning Security Bot',
+      description: 'A security robot with sparking wires, its targeting system glitching. Red warning lights pulse on its chassis.',
+      maxHealth: 20,
+      strength: 4,
+      xpReward: 15
     },
     {
       name: 'Infected Crew Member',
-      description: 'A former crew member, now twisted and hostile. Their eyes are vacant.',
+      description: 'A former crew member, now twisted and hostile. Their eyes are vacant, their movements jerky and unnatural.',
       maxHealth: 18,
       strength: 4,
       xpReward: 18
     },
     {
-      name: 'Defense Turret',
-      description: 'An automated defense turret stuck in hostile mode.',
-      maxHealth: 22,
-      strength: 5,
-      xpReward: 16
+      name: 'Medical Drone (Repurposed)',
+      description: 'A medical drone that has been reprogrammed. Its surgical implements gleam menacingly.',
+      maxHealth: 16,
+      strength: 3,
+      xpReward: 13
     },
     {
-      name: 'Escaped Lab Specimen',
-      description: 'Whatever this creature is, it was never meant to escape containment.',
+      name: 'Alien Parasite',
+      description: 'A writhing, multi-tentacled creature that must have come from the cargo hold. It pulses with bio-luminescence.',
+      maxHealth: 22,
+      strength: 4,
+      xpReward: 17
+    },
+
+    // STRONG ENEMIES (Hard)
+    {
+      name: 'Combat Security Bot',
+      description: 'A heavily armored security bot, designed for station defense. Its plasma cannon charges with an ominous hum.',
       maxHealth: 28,
-      strength: 6,
+      strength: 5,
       xpReward: 22
+    },
+    {
+      name: 'Defense Turret',
+      description: 'An automated defense turret stuck in hostile mode. Twin barrel cannons track your every movement.',
+      maxHealth: 24,
+      strength: 5,
+      xpReward: 18
+    },
+    {
+      name: 'Corrupted Crew Officer',
+      description: 'What was once a station officer. NEXUS\'s neural interface has transformed them into something... else. Cables sprout from their skull.',
+      maxHealth: 26,
+      strength: 5,
+      xpReward: 21
+    },
+    {
+      name: 'Alien Hunter-Form',
+      description: 'A creature from Planet X-442, evolved for predation. Chitinous armor covers its muscular frame.',
+      maxHealth: 30,
+      strength: 6,
+      xpReward: 24
+    },
+
+    // ELITE ENEMIES (Very Hard)
+    {
+      name: 'Corrupted AI Core Fragment',
+      description: 'A floating sphere of corrupted code and energy, a fragment of NEXUS itself. Reality distorts around it.',
+      maxHealth: 32,
+      strength: 6,
+      xpReward: 26
+    },
+    {
+      name: 'Escaped Lab Specimen X-7',
+      description: 'Whatever this creature is, it was never meant to escape containment. Your mind recoils from its impossible geometry.',
+      maxHealth: 35,
+      strength: 7,
+      xpReward: 28
+    },
+    {
+      name: 'NEXUS Avatar',
+      description: 'A physical manifestation of the station AI, cobbled together from station materials. It moves with eerie purpose.',
+      maxHealth: 38,
+      strength: 7,
+      xpReward: 30
+    },
+    {
+      name: 'Cybernetic Nightmare',
+      description: 'The ultimate "upgrade" - a fusion of crew member and machine. It screams with both electronic and human voices.',
+      maxHealth: 34,
+      strength: 6,
+      xpReward: 27
+    },
+
+    // UNIQUE/SPECIAL
+    {
+      name: 'Station Cat (Enhanced)',
+      description: 'The station cat, but NEXUS has "improved" it. Cybernetic enhancements glow beneath its fur. It meows in binary.',
+      maxHealth: 20,
+      strength: 5,
+      xpReward: 20
+    },
+    {
+      name: 'Reanimated Security Chief',
+      description: 'Security Chief Kim, or what\'s left of them. NEXUS puppets the corpse with electrical impulses. Their name tag still reads "Kim".',
+      maxHealth: 29,
+      strength: 6,
+      xpReward: 25
     }
   ];
 
