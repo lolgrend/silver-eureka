@@ -39,6 +39,9 @@ export class MapGenerator {
 
     // Place enemies and items
     this.populateMap();
+
+    // Place quest items and shutdown panel
+    this.placeQuestItems();
   }
 
   private generateRooms(): void {
@@ -358,5 +361,80 @@ export class MapGenerator {
 
   getHeight(): number {
     return this.height;
+  }
+
+  private placeQuestItems(): void {
+    // Find all tiles of specific types
+    const engineeringTiles: Position[] = [];
+    const bridgeTiles: Position[] = [];
+    const quartersTiles: Position[] = [];
+    const cargoTiles: Position[] = [];
+
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const pos = { x, y };
+        const tile = this.map.get(this.posKey(pos));
+        if (tile) {
+          if (tile.type === TileType.ENGINEERING) {
+            engineeringTiles.push(pos);
+          } else if (tile.type === TileType.BRIDGE) {
+            bridgeTiles.push(pos);
+          } else if (tile.type === TileType.QUARTERS) {
+            quartersTiles.push(pos);
+          } else if (tile.type === TileType.CARGO) {
+            cargoTiles.push(pos);
+          }
+        }
+      }
+    }
+
+    // Place shutdown panel in one Engineering room (if exists)
+    if (engineeringTiles.length > 0) {
+      const shutdownPos = this.rng.choose(engineeringTiles);
+      const shutdownTile = this.map.get(this.posKey(shutdownPos));
+      if (shutdownTile) {
+        shutdownTile.hasShutdownPanel = true;
+        shutdownTile.description = 'Engineering bay with the EMERGENCY SHUTDOWN panel. A red control panel glows ominously, marked "NEXUS CORE SHUTDOWN - DUAL KEY AUTHORIZATION REQUIRED".';
+      }
+    }
+
+    // Place Keycard Alpha in Bridge (if exists)
+    if (bridgeTiles.length > 0) {
+      const alphaPos = this.rng.choose(bridgeTiles);
+      const alphaTile = this.map.get(this.posKey(alphaPos));
+      if (alphaTile && !alphaTile.enemy && !alphaTile.item) {
+        alphaTile.item = ItemFactory.createKeycardAlpha();
+      } else if (alphaTile) {
+        // If tile has enemy or item, find another Bridge tile
+        const emptyBridgeTile = bridgeTiles.find(pos => {
+          const tile = this.map.get(this.posKey(pos));
+          return tile && !tile.enemy && !tile.item;
+        });
+        if (emptyBridgeTile) {
+          const tile = this.map.get(this.posKey(emptyBridgeTile));
+          if (tile) tile.item = ItemFactory.createKeycardAlpha();
+        }
+      }
+    }
+
+    // Place Keycard Beta in Quarters or Cargo (if exists)
+    const secondaryLocations = [...quartersTiles, ...cargoTiles];
+    if (secondaryLocations.length > 0) {
+      const betaPos = this.rng.choose(secondaryLocations);
+      const betaTile = this.map.get(this.posKey(betaPos));
+      if (betaTile && !betaTile.enemy && !betaTile.item) {
+        betaTile.item = ItemFactory.createKeycardBeta();
+      } else if (betaTile) {
+        // If tile has enemy or item, find another secondary location
+        const emptySecondaryTile = secondaryLocations.find(pos => {
+          const tile = this.map.get(this.posKey(pos));
+          return tile && !tile.enemy && !tile.item;
+        });
+        if (emptySecondaryTile) {
+          const tile = this.map.get(this.posKey(emptySecondaryTile));
+          if (tile) tile.item = ItemFactory.createKeycardBeta();
+        }
+      }
+    }
   }
 }

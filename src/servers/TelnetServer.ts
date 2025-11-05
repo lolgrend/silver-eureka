@@ -117,6 +117,8 @@ export class TelnetServer {
         return arg ? game.readItem(arg) : 'Read what? (e.g., "read log")';
       case 'search':
         return game.search();
+      case 'shutdown':
+        return game.shutdown();
       case 'attack': case 'fight':
         return game.attack();
       case 'flee': case 'run': case 'escape':
@@ -149,6 +151,9 @@ Inventory:
 Combat:
   attack      - Attack enemy
   flee        - Try to escape
+
+Victory:
+  shutdown    - Use emergency shutdown (requires both keycards at Engineering panel)
 
 Other:
   stats       - View character stats

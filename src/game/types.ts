@@ -10,6 +10,7 @@ export interface Tile {
   item?: Item;
   discovered: boolean;
   searchCount: number; // Tracks how many times this tile has been searched
+  hasShutdownPanel?: boolean; // Marks Engineering tile with emergency shutdown
 }
 
 export enum TileType {

@@ -159,6 +159,24 @@ If anyone survives, arm yourself. You'll need every advantage against what's com
       description
     };
   }
+
+  static createKeycardAlpha(): Item {
+    return {
+      id: 'keycard_alpha',
+      name: 'Security Keycard Alpha',
+      type: ItemType.QUEST_ITEM,
+      description: 'A red security keycard marked "ALPHA - EMERGENCY PROTOCOLS". Half of the emergency shutdown authorization.'
+    };
+  }
+
+  static createKeycardBeta(): Item {
+    return {
+      id: 'keycard_beta',
+      name: 'Security Keycard Beta',
+      type: ItemType.QUEST_ITEM,
+      description: 'A blue security keycard marked "BETA - EMERGENCY PROTOCOLS". The second half of the emergency shutdown authorization.'
+    };
+  }
 }
 
 export class SearchDescriptions {

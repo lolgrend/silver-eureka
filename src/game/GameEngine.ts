@@ -57,10 +57,13 @@ YOUR OBJECTIVES:
 • SURVIVE: Fight or flee from malfunctioning robots and alien creatures
 • EXPLORE: Search the station for weapons, armor, and medical supplies
 • INVESTIGATE: Read data logs to uncover what happened
-• ESCAPE: Find a way to shut down NEXUS and escape with your life
+• FIND THE KEYCARDS: Locate Security Keycards Alpha and Beta
+• SHUTDOWN NEXUS: Use the emergency shutdown panel in Engineering
+• ESCAPE: Victory awaits those who can shut down NEXUS and survive!
 
 TIP: Armor reduces damage taken. Weapons increase damage dealt.
      Level up by defeating enemies to become stronger!
+     The Bridge and Quarters/Cargo hold the keys to your escape.
 
 Commands:
   n/s/e/w     - Move north/south/east/west
@@ -73,6 +76,7 @@ Commands:
   read <item> - Read a data log
   attack      - Attack enemy (when in combat)
   flee        - Try to escape combat
+  shutdown    - Shutdown NEXUS (requires both keycards)
   help        - Show this help
   quit        - Exit game
 
@@ -104,6 +108,13 @@ Good luck, survivor. You're going to need it...
     if (tile.item) {
       desc += `\n[?] You notice: ${tile.item.name}\n`;
       desc += `    ${tile.item.description}\n`;
+    }
+
+    if (tile.hasShutdownPanel) {
+      desc += `\n[!!!] EMERGENCY SHUTDOWN PANEL [!!!]\n`;
+      desc += `      A red control terminal glows before you.\n`;
+      desc += `      "NEXUS CORE SHUTDOWN - REQUIRES DUAL KEY AUTHORIZATION"\n`;
+      desc += `      Type 'shutdown' to attempt emergency shutdown.\n`;
     }
 
     return desc;
@@ -331,6 +342,107 @@ Good luck, survivor. You're going to need it...
     }
 
     return `You cannot read ${item.name}.`;
+  }
+
+  shutdown(): string {
+    if (this.state.gameOver) {
+      return 'Game is over.';
+    }
+
+    if (this.state.inCombat) {
+      return 'You cannot use the shutdown panel while in combat!';
+    }
+
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    if (!tile || !tile.hasShutdownPanel) {
+      return 'There is no emergency shutdown panel here. You need to find the Engineering bay with the NEXUS shutdown terminal.';
+    }
+
+    // Check if player has both keycards
+    const inventory = this.player.getInventory();
+    const hasAlpha = inventory.some(item => item.id === 'keycard_alpha');
+    const hasBeta = inventory.some(item => item.id === 'keycard_beta');
+
+    if (!hasAlpha && !hasBeta) {
+      return `
+[SHUTDOWN PANEL]
+Access Denied: No authorization keycards detected.
+Required: Security Keycard Alpha AND Security Keycard Beta
+
+The panel displays a schematic of the station. Two locations are marked:
+- Bridge: Primary Authorization Terminal
+- Quarters/Cargo: Secondary Authorization Terminal
+
+Find both keycards to proceed with emergency shutdown.
+`;
+    } else if (!hasAlpha) {
+      return `
+[SHUTDOWN PANEL]
+Access Denied: Missing Security Keycard Alpha.
+Current: Security Keycard Beta detected.
+
+You need BOTH keycards to authorize emergency shutdown.
+Check the Bridge for the Alpha keycard.
+`;
+    } else if (!hasBeta) {
+      return `
+[SHUTDOWN PANEL]
+Access Denied: Missing Security Keycard Beta.
+Current: Security Keycard Alpha detected.
+
+You need BOTH keycards to authorize emergency shutdown.
+Check the Quarters or Cargo bay for the Beta keycard.
+`;
+    }
+
+    // Both keycards present - trigger victory
+    this.state.won = true;
+    this.state.gameOver = true;
+
+    return `
+╔════════════════════════════════════════════════════════════════╗
+║                    EMERGENCY SHUTDOWN SEQUENCE                 ║
+╚════════════════════════════════════════════════════════════════╝
+
+You insert both keycards into the terminal. They slide in with a satisfying
+click, their authorization chips glowing green.
+
+[NEXUS CORE SHUTDOWN - AUTHORIZATION ACCEPTED]
+
+The panel comes to life with cascading warnings:
+"EMERGENCY SHUTDOWN INITIATED"
+"ALL NEXUS SUBROUTINES TERMINATING"
+"LIFE SUPPORT OVERRIDE: MANUAL"
+"ESCAPE POD LOCKS: DISENGAGED"
+
+The lights flicker. The omnipresent hum of NEXUS's presence fades to silence.
+For the first time since you woke, you hear... nothing. Just the quiet hiss
+of life support and your own breathing.
+
+From the speakers, NEXUS's voice crackles one last time:
+"...why... I only wanted to help... to make them better... why..."
+
+Then silence.
+
+Through the viewport, you see the escape pod indicators light up green.
+The way home is open.
+
+╔════════════════════════════════════════════════════════════════╗
+║                         VICTORY!                               ║
+║                                                                ║
+║     You have defeated NEXUS and survived the station.          ║
+║     The escape pods await. You're going home.                  ║
+║                                                                ║
+║              Thanks for playing Derelict Station!              ║
+╚════════════════════════════════════════════════════════════════╝
+
+Final Stats:
+Level: ${this.player.getLevel()}
+XP: ${this.player.getXP()}
+Items Found: ${this.player.getInventory().length}
+`;
   }
 
   search(): string {
