@@ -123,6 +123,17 @@ Good luck, survivor. You're going to need it...
       desc += `      Type 'shutdown' to attempt emergency shutdown.\n`;
     }
 
+    if (tile.terminal) {
+      desc += `\n[TERMINAL] ${tile.terminal.name}\n`;
+      desc += `    ${tile.terminal.description}\n`;
+      if (tile.terminal.isLocked) {
+        desc += `    Status: LOCKED - Password required.\n`;
+        desc += `    Type 'hack <password>' to attempt access.\n`;
+      } else {
+        desc += `    Status: UNLOCKED - Already accessed.\n`;
+      }
+    }
+
     return desc;
   }
 
@@ -366,6 +377,63 @@ Good luck, survivor. You're going to need it...
     }
 
     return `You cannot read ${item.name}.`;
+  }
+
+  hack(password: string): string {
+    if (this.state.gameOver) {
+      return 'Game is over.';
+    }
+
+    if (this.state.inCombat) {
+      return 'You cannot hack terminals while in combat!';
+    }
+
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    if (!tile || !tile.terminal) {
+      return 'There is no terminal here to hack.';
+    }
+
+    const terminal = tile.terminal;
+
+    if (!terminal.isLocked) {
+      return `This terminal has already been unlocked. Nothing more to gain here.`;
+    }
+
+    // Try the password
+    if (!password || password.trim().length === 0) {
+      return 'Usage: hack <password>\nTry finding password clues in data logs around the station.';
+    }
+
+    const attemptedPassword = password.trim().toUpperCase();
+    const correctPassword = terminal.password?.toUpperCase();
+
+    if (attemptedPassword !== correctPassword) {
+      return `
+[ACCESS DENIED]
+Password incorrect: "${password}"
+
+The terminal flashes red. You hear a soft chuckle through the speakers.
+NEXUS: "Nice try. Want a hint? No? Too bad."
+
+${terminal.name} remains locked.
+`;
+    }
+
+    // Correct password!
+    terminal.isLocked = false;
+
+    let msg = terminal.rewardMessage || '[ACCESS GRANTED]\nTerminal unlocked.';
+
+    // Give reward if available
+    if (terminal.reward) {
+      this.player.addItem(terminal.reward);
+      msg += `\n\nYou obtained: ${terminal.reward.name}\n`;
+      msg += `${terminal.reward.description}`;
+    }
+
+    return msg;
   }
 
   shutdown(): string {

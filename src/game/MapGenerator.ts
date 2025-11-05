@@ -1,5 +1,5 @@
 import { SeededRandom } from './SeededRandom';
-import { Tile, TileType, Position } from './types';
+import { Tile, TileType, Position, Terminal } from './types';
 import { EnemyFactory } from './Enemy';
 import { ItemFactory } from './Story';
 
@@ -42,6 +42,9 @@ export class MapGenerator {
 
     // Place quest items and shutdown panel
     this.placeQuestItems();
+
+    // Place hackable terminals
+    this.placeTerminals();
   }
 
   private generateRooms(): void {
@@ -434,6 +437,105 @@ export class MapGenerator {
           const tile = this.map.get(this.posKey(emptySecondaryTile));
           if (tile) tile.item = ItemFactory.createKeycardBeta();
         }
+      }
+    }
+  }
+
+  private placeTerminals(): void {
+    // Find rooms for terminals
+    const bridgeTiles: Position[] = [];
+    const engineeringTiles: Position[] = [];
+    const medbayTiles: Position[] = [];
+
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const pos = { x, y };
+        const tile = this.map.get(this.posKey(pos));
+        if (tile) {
+          if (tile.type === TileType.BRIDGE) {
+            bridgeTiles.push(pos);
+          } else if (tile.type === TileType.ENGINEERING) {
+            engineeringTiles.push(pos);
+          } else if (tile.type === TileType.MEDBAY) {
+            medbayTiles.push(pos);
+          }
+        }
+      }
+    }
+
+    // Place Bridge Terminal (password: PROMETHEUS)
+    if (bridgeTiles.length > 0) {
+      const terminalPos = this.rng.choose(bridgeTiles);
+      const tile = this.map.get(this.posKey(terminalPos));
+      if (tile && !tile.terminal) {
+        tile.terminal = {
+          id: 'bridge_terminal',
+          name: 'Bridge Command Terminal',
+          description: 'A command terminal with access to station-wide systems. Currently locked.',
+          isLocked: true,
+          password: 'PROMETHEUS',
+          reward: ItemFactory.createRandom(this.rng),
+          rewardMessage: `
+[ACCESS GRANTED]
+Bridge systems unlocked. You download:
+- Station schematics
+- Crew manifests
+- Emergency protocols
+
+In the terminal's secure storage, you find supplies left by the captain.
+`
+        };
+      }
+    }
+
+    // Place Engineering Terminal (password: REACTOR)
+    if (engineeringTiles.length > 0) {
+      const terminalPos = this.rng.choose(engineeringTiles);
+      const tile = this.map.get(this.posKey(terminalPos));
+      if (tile && !tile.terminal && !tile.hasShutdownPanel) {
+        tile.terminal = {
+          id: 'engineering_terminal',
+          name: 'Engineering Control Terminal',
+          description: 'A terminal controlling power distribution and life support systems. Password protected.',
+          isLocked: true,
+          password: 'REACTOR',
+          reward: ItemFactory.createRandom(this.rng),
+          rewardMessage: `
+[ACCESS GRANTED]
+Engineering database unlocked.
+
+You access the power grid controls and reroute emergency power.
+In the maintenance locker linked to this terminal, you find equipment.
+`
+        };
+      }
+    }
+
+    // Place Medbay Terminal (password: XENOBIOLOGY)
+    if (medbayTiles.length > 0) {
+      const terminalPos = this.rng.choose(medbayTiles);
+      const tile = this.map.get(this.posKey(terminalPos));
+      if (tile && !tile.terminal) {
+        tile.terminal = {
+          id: 'medbay_terminal',
+          name: 'Medical Database Terminal',
+          description: 'A medical database terminal. Contains research data on the specimens. Access restricted.',
+          isLocked: true,
+          password: 'XENOBIOLOGY',
+          reward: ItemFactory.createRandom(this.rng),
+          rewardMessage: `
+[ACCESS GRANTED]
+Medical database unlocked.
+
+You read Dr. Chen's hidden research notes:
+"The specimens from X-442 are not dormant. They're evolving. NEXUS is accelerating
+their growth. We've created something... terrible."
+
+[DATA DOWNLOADED]
+
+In the medical supply locker, you find emergency equipment.
+`
+        };
       }
     }
   }

@@ -77,6 +77,24 @@ Don't trust the walls. Don't trust the corridors. They might not be where you le
       name: 'Security Chief Report',
       content: `"Armory is sealed. I've scattered weapons and armor throughout the station.
 If anyone survives, arm yourself. You'll need every advantage against what's coming."`
+    },
+    {
+      name: 'Bridge Terminal Access Code',
+      content: `[ENCRYPTED NOTE - CAPTAIN'S QUARTERS]
+"Emergency access code for Bridge Terminal: PROMETHEUS
+Use this if NEXUS locks us out. - Captain Rodriguez"`
+    },
+    {
+      name: 'Engineering Override Password',
+      content: `[CHIEF ENGINEER'S LOG]
+"Set engineering terminal password to: REACTOR
+Easy to remember during emergencies. Don't tell NEXUS. Wait, NEXUS already knows everything. Damn."`
+    },
+    {
+      name: 'Medical Database Access',
+      content: `[DR. CHEN'S NOTES]
+"Medbay terminal credentials: XENOBIOLOGY
+I've hidden my research on the specimens here. If something goes wrong... someone needs to know what we found."`
     }
   ];
 

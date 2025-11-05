@@ -117,6 +117,8 @@ export class TelnetServer {
         return arg ? game.readItem(arg) : 'Read what? (e.g., "read log")';
       case 'search':
         return game.search();
+      case 'hack':
+        return arg ? game.hack(arg) : 'Usage: hack <password>\nFind passwords in data logs.';
       case 'shutdown':
         return game.shutdown();
       case 'attack': case 'fight':
@@ -141,7 +143,8 @@ Movement:
   map         - View discovered areas
 
 Exploration:
-  search      - Search the current area for hidden items
+  search         - Search the current area for hidden items
+  hack <password> - Hack a terminal (find passwords in data logs)
 
 Inventory:
   inventory   - View inventory (or 'i')

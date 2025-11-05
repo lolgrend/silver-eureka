@@ -3,6 +3,16 @@ export interface Position {
   y: number;
 }
 
+export interface Terminal {
+  id: string;
+  name: string;
+  description: string;
+  isLocked: boolean;
+  password?: string; // Password to unlock
+  reward?: Item; // Reward for hacking
+  rewardMessage?: string; // Message shown when successfully hacked
+}
+
 export interface Tile {
   type: TileType;
   description: string;
@@ -11,6 +21,7 @@ export interface Tile {
   discovered: boolean;
   searchCount: number; // Tracks how many times this tile has been searched
   hasShutdownPanel?: boolean; // Marks Engineering tile with emergency shutdown
+  terminal?: Terminal; // Hackable terminal
 }
 
 export enum TileType {
