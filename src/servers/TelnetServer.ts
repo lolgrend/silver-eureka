@@ -115,6 +115,8 @@ export class TelnetServer {
         return arg ? game.useItem(arg) : 'Use what? (e.g., "use medkit")';
       case 'read':
         return arg ? game.readItem(arg) : 'Read what? (e.g., "read log")';
+      case 'search':
+        return game.search();
       case 'attack': case 'fight':
         return game.attack();
       case 'flee': case 'run': case 'escape':
@@ -135,6 +137,9 @@ Movement:
   n, s, e, w  - Move north, south, east, west
   look        - Examine surroundings
   map         - View discovered areas
+
+Exploration:
+  search      - Search the current area for hidden items
 
 Inventory:
   inventory   - View inventory (or 'i')

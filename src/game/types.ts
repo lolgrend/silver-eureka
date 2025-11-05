@@ -9,10 +9,12 @@ export interface Tile {
   enemy?: Enemy;
   item?: Item;
   discovered: boolean;
+  searchCount: number; // Tracks how many times this tile has been searched
 }
 
 export enum TileType {
   CORRIDOR = 'corridor',
+  DOOR = 'door',
   ROOM = 'room',
   AIRLOCK = 'airlock',
   ENGINEERING = 'engineering',

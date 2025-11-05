@@ -2,6 +2,8 @@ import { MapGenerator } from './MapGenerator';
 import { Player } from './Player';
 import { Combat, CombatResult } from './Combat';
 import { Position, TileType, ItemType } from './types';
+import { SearchDescriptions, ItemFactory } from './Story';
+import { SeededRandom } from './SeededRandom';
 
 export interface GameState {
   inCombat: boolean;
@@ -14,9 +16,11 @@ export class GameEngine {
   private player: Player;
   private state: GameState;
   private sessionSeed: string;
+  private rng: SeededRandom;
 
   constructor(sessionId: string) {
     this.sessionSeed = sessionId;
+    this.rng = new SeededRandom(sessionId + '_search'); // Separate RNG for search
     this.map = new MapGenerator(sessionId);
     const startPos = this.map.getRandomWalkablePosition();
     this.player = new Player(startPos);
@@ -61,6 +65,7 @@ TIP: Armor reduces damage taken. Weapons increase damage dealt.
 Commands:
   n/s/e/w     - Move north/south/east/west
   look        - Examine your surroundings
+  search      - Search the area for hidden items
   map         - View discovered areas (x to close)
   inventory   - Check your inventory (i)
   stats       - View your stats
@@ -328,6 +333,60 @@ Good luck, survivor. You're going to need it...
     return `You cannot read ${item.name}.`;
   }
 
+  search(): string {
+    if (this.state.gameOver) {
+      return 'Game is over.';
+    }
+
+    if (this.state.inCombat) {
+      return 'You cannot search while in combat! Deal with the threat first.';
+    }
+
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    if (!tile) {
+      return 'There is nothing to search here.';
+    }
+
+    if (tile.type === TileType.WALL) {
+      return 'You cannot search a wall.';
+    }
+
+    // Calculate search chance: 20% base, -7% per previous search
+    const baseChance = 0.20;
+    const penalty = tile.searchCount * 0.07;
+    const searchChance = Math.max(0, baseChance - penalty);
+
+    // Increment search count
+    tile.searchCount++;
+
+    // Determine if something is found
+    const foundSomething = this.rng.next() < searchChance;
+
+    let message = '\n' + SearchDescriptions.getSearchDescription(tile.type, this.rng, foundSomething);
+
+    if (foundSomething) {
+      // Generate and add item to player inventory
+      const item = ItemFactory.createRandom(this.rng);
+      this.player.addItem(item);
+      message += `\n\nYou obtained: ${item.name}`;
+      message += `\n${item.description}`;
+    } else {
+      // Show decreased chance for next search if applicable
+      if (tile.searchCount > 1 && searchChance > 0) {
+        const nextChance = Math.max(0, baseChance - tile.searchCount * 0.07);
+        if (nextChance > 0) {
+          message += `\n\n(Searching this area again will be harder. Chance: ${Math.round(nextChance * 100)}%)`;
+        } else {
+          message += `\n\n(This area has been thoroughly searched. You won't find anything else here.)`;
+        }
+      }
+    }
+
+    return message;
+  }
+
   getInventory(): string {
     const items = this.player.getInventory();
     if (items.length === 0) {
@@ -361,8 +420,8 @@ Position: (${p.getPosition().x}, ${p.getPosition().y})
     const mapHeight = this.map.getHeight();
 
     let mapStr = '\n=== DISCOVERED MAP ===\n';
-    mapStr += 'Legend: @ = You, # = Wall, . = Floor, E = Enemy, ? = Item\n';
-    mapStr += '        B = Bridge, M = Medbay, C = Cargo, Q = Quarters\n\n';
+    mapStr += 'Legend: @ = You, # = Wall, . = Floor, + = Door, E = Enemy, ? = Item\n';
+    mapStr += '        B = Bridge, M = Medbay, C = Cargo, Q = Quarters, N = Engineering\n\n';
 
     for (let y = 0; y < mapHeight; y++) {
       for (let x = 0; x < mapWidth; x++) {
@@ -387,6 +446,7 @@ Position: (${p.getPosition().x}, ${p.getPosition().y})
             case TileType.QUARTERS: mapStr += 'Q'; break;
             case TileType.ENGINEERING: mapStr += 'N'; break;
             case TileType.AIRLOCK: mapStr += 'A'; break;
+            case TileType.DOOR: mapStr += '+'; break;
             default: mapStr += '.';
           }
         }
