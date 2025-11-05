@@ -115,6 +115,14 @@ export class TelnetServer {
         return arg ? game.useItem(arg) : 'Use what? (e.g., "use medkit")';
       case 'read':
         return arg ? game.readItem(arg) : 'Read what? (e.g., "read log")';
+      case 'search':
+        return game.search();
+      case 'solve':
+        return game.solve(arg);
+      case 'hack':
+        return arg ? game.hack(arg) : 'Usage: hack <password>\nFind passwords in data logs.';
+      case 'shutdown':
+        return game.shutdown();
       case 'attack': case 'fight':
         return game.attack();
       case 'flee': case 'run': case 'escape':
@@ -136,6 +144,11 @@ Movement:
   look        - Examine surroundings
   map         - View discovered areas
 
+Exploration:
+  search         - Search the current area for hidden items
+  solve <answer> - Solve a puzzle (science/math challenges)
+  hack <password> - Hack a terminal (find passwords in data logs)
+
 Inventory:
   inventory   - View inventory (or 'i')
   use <item>  - Use an item (medkit, weapon, armor)
@@ -144,6 +157,9 @@ Inventory:
 Combat:
   attack      - Attack enemy
   flee        - Try to escape
+
+Victory:
+  shutdown    - Use emergency shutdown (requires both keycards at Engineering panel)
 
 Other:
   stats       - View character stats

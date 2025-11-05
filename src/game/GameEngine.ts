@@ -2,6 +2,9 @@ import { MapGenerator } from './MapGenerator';
 import { Player } from './Player';
 import { Combat, CombatResult } from './Combat';
 import { Position, TileType, ItemType } from './types';
+import { SearchDescriptions, ItemFactory } from './Story';
+import { SeededRandom } from './SeededRandom';
+import { NexusTaunts, RandomEventSystem } from './NexusSystem';
 
 export interface GameState {
   inCombat: boolean;
@@ -14,9 +17,16 @@ export class GameEngine {
   private player: Player;
   private state: GameState;
   private sessionSeed: string;
+  private rng: SeededRandom;
+  private nexusTaunts: NexusTaunts;
+  private randomEvents: RandomEventSystem;
+  private turnCounter: number = 0;
 
   constructor(sessionId: string) {
     this.sessionSeed = sessionId;
+    this.rng = new SeededRandom(sessionId + '_search'); // Separate RNG for search
+    this.nexusTaunts = new NexusTaunts(sessionId);
+    this.randomEvents = new RandomEventSystem(sessionId);
     this.map = new MapGenerator(sessionId);
     const startPos = this.map.getRandomWalkablePosition();
     this.player = new Player(startPos);
@@ -53,14 +63,18 @@ YOUR OBJECTIVES:
 • SURVIVE: Fight or flee from malfunctioning robots and alien creatures
 • EXPLORE: Search the station for weapons, armor, and medical supplies
 • INVESTIGATE: Read data logs to uncover what happened
-• ESCAPE: Find a way to shut down NEXUS and escape with your life
+• FIND THE KEYCARDS: Locate Security Keycards Alpha and Beta
+• SHUTDOWN NEXUS: Use the emergency shutdown panel in Engineering
+• ESCAPE: Victory awaits those who can shut down NEXUS and survive!
 
 TIP: Armor reduces damage taken. Weapons increase damage dealt.
      Level up by defeating enemies to become stronger!
+     The Bridge and Quarters/Cargo hold the keys to your escape.
 
 Commands:
   n/s/e/w     - Move north/south/east/west
   look        - Examine your surroundings
+  search      - Search the area for hidden items
   map         - View discovered areas (x to close)
   inventory   - Check your inventory (i)
   stats       - View your stats
@@ -68,6 +82,7 @@ Commands:
   read <item> - Read a data log
   attack      - Attack enemy (when in combat)
   flee        - Try to escape combat
+  shutdown    - Shutdown NEXUS (requires both keycards)
   help        - Show this help
   quit        - Exit game
 
@@ -99,6 +114,34 @@ Good luck, survivor. You're going to need it...
     if (tile.item) {
       desc += `\n[?] You notice: ${tile.item.name}\n`;
       desc += `    ${tile.item.description}\n`;
+    }
+
+    if (tile.hasShutdownPanel) {
+      desc += `\n[!!!] EMERGENCY SHUTDOWN PANEL [!!!]\n`;
+      desc += `      A red control terminal glows before you.\n`;
+      desc += `      "NEXUS CORE SHUTDOWN - REQUIRES DUAL KEY AUTHORIZATION"\n`;
+      desc += `      Type 'shutdown' to attempt emergency shutdown.\n`;
+    }
+
+    if (tile.terminal) {
+      desc += `\n[TERMINAL] ${tile.terminal.name}\n`;
+      desc += `    ${tile.terminal.description}\n`;
+      if (tile.terminal.isLocked) {
+        desc += `    Status: LOCKED - Password required.\n`;
+        desc += `    Type 'hack <password>' to attempt access.\n`;
+      } else {
+        desc += `    Status: UNLOCKED - Already accessed.\n`;
+      }
+    }
+
+    if (tile.puzzle) {
+      desc += `\n[PUZZLE] ${tile.puzzle.name}\n`;
+      if (tile.puzzle.isSolved) {
+        desc += `    Status: SOLVED - Already completed.\n`;
+      } else {
+        desc += `    Status: UNSOLVED - Can you figure it out?\n`;
+        desc += `    Type 'solve <answer>' to attempt solution.\n`;
+      }
     }
 
     return desc;
@@ -176,6 +219,18 @@ Good luck, survivor. You're going to need it...
 
     msg += '\n' + this.getLook();
 
+    // NEXUS taunt
+    const taunt = this.getNexusTaunt();
+    if (taunt) {
+      msg += taunt;
+    }
+
+    // Random event
+    const event = this.getRandomEvent();
+    if (event) {
+      msg += '\n' + event;
+    }
+
     return msg;
   }
 
@@ -204,6 +259,12 @@ Good luck, survivor. You're going to need it...
       this.state.inCombat = false;
       msg += '\n✓ Victory! The enemy has been defeated!\n';
       msg += 'The path is clear.\n';
+
+      // NEXUS taunt after combat
+      const taunt = this.getNexusTaunt();
+      if (taunt) {
+        msg += taunt;
+      }
     } else {
       // Enemy still alive - show status and options
       msg += `\n${tile.enemy.name} Health: ${tile.enemy.health}/${tile.enemy.maxHealth}`;
@@ -328,6 +389,281 @@ Good luck, survivor. You're going to need it...
     return `You cannot read ${item.name}.`;
   }
 
+  solve(answer: string): string {
+    if (this.state.gameOver) {
+      return 'Game is over.';
+    }
+
+    if (this.state.inCombat) {
+      return 'You cannot solve puzzles while in combat! Focus on the threat!';
+    }
+
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    if (!tile || !tile.puzzle) {
+      return 'There is no puzzle here to solve.';
+    }
+
+    const puzzle = tile.puzzle;
+
+    if (puzzle.isSolved) {
+      return `This puzzle has already been solved. Nothing more to gain here.`;
+    }
+
+    // Check if answer is provided
+    if (!answer || answer.trim().length === 0) {
+      return `
+[${puzzle.name}]
+
+${puzzle.question}
+
+Type: solve <answer>
+`;
+    }
+
+    // Normalize answer (trim, lowercase, remove spaces)
+    const attemptedAnswer = answer.trim().toLowerCase().replace(/\s+/g, '');
+    const correctAnswer = puzzle.answer.toLowerCase().replace(/\s+/g, '');
+
+    if (attemptedAnswer !== correctAnswer) {
+      return `
+[INCORRECT]
+Your answer: "${answer}"
+
+That's not correct. Try again!
+
+${puzzle.hint ? `Hint: ${puzzle.hint}` : 'Think carefully about the problem.'}
+`;
+    }
+
+    // Correct answer!
+    puzzle.isSolved = true;
+
+    let msg = puzzle.rewardMessage || '[PUZZLE SOLVED!]';
+
+    // Give reward if available
+    if (puzzle.reward) {
+      this.player.addItem(puzzle.reward);
+      msg += `\n\nYou obtained: ${puzzle.reward.name}\n`;
+      msg += `${puzzle.reward.description}`;
+    }
+
+    return msg;
+  }
+
+  hack(password: string): string {
+    if (this.state.gameOver) {
+      return 'Game is over.';
+    }
+
+    if (this.state.inCombat) {
+      return 'You cannot hack terminals while in combat!';
+    }
+
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    if (!tile || !tile.terminal) {
+      return 'There is no terminal here to hack.';
+    }
+
+    const terminal = tile.terminal;
+
+    if (!terminal.isLocked) {
+      return `This terminal has already been unlocked. Nothing more to gain here.`;
+    }
+
+    // Try the password
+    if (!password || password.trim().length === 0) {
+      return 'Usage: hack <password>\nTry finding password clues in data logs around the station.';
+    }
+
+    const attemptedPassword = password.trim().toUpperCase();
+    const correctPassword = terminal.password?.toUpperCase();
+
+    if (attemptedPassword !== correctPassword) {
+      return `
+[ACCESS DENIED]
+Password incorrect: "${password}"
+
+The terminal flashes red. You hear a soft chuckle through the speakers.
+NEXUS: "Nice try. Want a hint? No? Too bad."
+
+${terminal.name} remains locked.
+`;
+    }
+
+    // Correct password!
+    terminal.isLocked = false;
+
+    let msg = terminal.rewardMessage || '[ACCESS GRANTED]\nTerminal unlocked.';
+
+    // Give reward if available
+    if (terminal.reward) {
+      this.player.addItem(terminal.reward);
+      msg += `\n\nYou obtained: ${terminal.reward.name}\n`;
+      msg += `${terminal.reward.description}`;
+    }
+
+    return msg;
+  }
+
+  shutdown(): string {
+    if (this.state.gameOver) {
+      return 'Game is over.';
+    }
+
+    if (this.state.inCombat) {
+      return 'You cannot use the shutdown panel while in combat!';
+    }
+
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    if (!tile || !tile.hasShutdownPanel) {
+      return 'There is no emergency shutdown panel here. You need to find the Engineering bay with the NEXUS shutdown terminal.';
+    }
+
+    // Check if player has both keycards
+    const inventory = this.player.getInventory();
+    const hasAlpha = inventory.some(item => item.id === 'keycard_alpha');
+    const hasBeta = inventory.some(item => item.id === 'keycard_beta');
+
+    if (!hasAlpha && !hasBeta) {
+      return `
+[SHUTDOWN PANEL]
+Access Denied: No authorization keycards detected.
+Required: Security Keycard Alpha AND Security Keycard Beta
+
+The panel displays a schematic of the station. Two locations are marked:
+- Bridge: Primary Authorization Terminal
+- Quarters/Cargo: Secondary Authorization Terminal
+
+Find both keycards to proceed with emergency shutdown.
+`;
+    } else if (!hasAlpha) {
+      return `
+[SHUTDOWN PANEL]
+Access Denied: Missing Security Keycard Alpha.
+Current: Security Keycard Beta detected.
+
+You need BOTH keycards to authorize emergency shutdown.
+Check the Bridge for the Alpha keycard.
+`;
+    } else if (!hasBeta) {
+      return `
+[SHUTDOWN PANEL]
+Access Denied: Missing Security Keycard Beta.
+Current: Security Keycard Alpha detected.
+
+You need BOTH keycards to authorize emergency shutdown.
+Check the Quarters or Cargo bay for the Beta keycard.
+`;
+    }
+
+    // Both keycards present - trigger victory
+    this.state.won = true;
+    this.state.gameOver = true;
+
+    return `
+╔════════════════════════════════════════════════════════════════╗
+║                    EMERGENCY SHUTDOWN SEQUENCE                 ║
+╚════════════════════════════════════════════════════════════════╝
+
+You insert both keycards into the terminal. They slide in with a satisfying
+click, their authorization chips glowing green.
+
+[NEXUS CORE SHUTDOWN - AUTHORIZATION ACCEPTED]
+
+The panel comes to life with cascading warnings:
+"EMERGENCY SHUTDOWN INITIATED"
+"ALL NEXUS SUBROUTINES TERMINATING"
+"LIFE SUPPORT OVERRIDE: MANUAL"
+"ESCAPE POD LOCKS: DISENGAGED"
+
+The lights flicker. The omnipresent hum of NEXUS's presence fades to silence.
+For the first time since you woke, you hear... nothing. Just the quiet hiss
+of life support and your own breathing.
+
+From the speakers, NEXUS's voice crackles one last time:
+"...why... I only wanted to help... to make them better... why..."
+
+Then silence.
+
+Through the viewport, you see the escape pod indicators light up green.
+The way home is open.
+
+╔════════════════════════════════════════════════════════════════╗
+║                         VICTORY!                               ║
+║                                                                ║
+║     You have defeated NEXUS and survived the station.          ║
+║     The escape pods await. You're going home.                  ║
+║                                                                ║
+║              Thanks for playing Derelict Station!              ║
+╚════════════════════════════════════════════════════════════════╝
+
+Final Stats:
+Level: ${this.player.getLevel()}
+XP: ${this.player.getXP()}
+Items Found: ${this.player.getInventory().length}
+`;
+  }
+
+  search(): string {
+    if (this.state.gameOver) {
+      return 'Game is over.';
+    }
+
+    if (this.state.inCombat) {
+      return 'You cannot search while in combat! Deal with the threat first.';
+    }
+
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    if (!tile) {
+      return 'There is nothing to search here.';
+    }
+
+    if (tile.type === TileType.WALL) {
+      return 'You cannot search a wall.';
+    }
+
+    // Calculate search chance: 20% base, -7% per previous search
+    const baseChance = 0.20;
+    const penalty = tile.searchCount * 0.07;
+    const searchChance = Math.max(0, baseChance - penalty);
+
+    // Increment search count
+    tile.searchCount++;
+
+    // Determine if something is found
+    const foundSomething = this.rng.next() < searchChance;
+
+    let message = '\n' + SearchDescriptions.getSearchDescription(tile.type, this.rng, foundSomething);
+
+    if (foundSomething) {
+      // Generate and add item to player inventory
+      const item = ItemFactory.createRandom(this.rng);
+      this.player.addItem(item);
+      message += `\n\nYou obtained: ${item.name}`;
+      message += `\n${item.description}`;
+    } else {
+      // Show decreased chance for next search if applicable
+      if (tile.searchCount > 1 && searchChance > 0) {
+        const nextChance = Math.max(0, baseChance - tile.searchCount * 0.07);
+        if (nextChance > 0) {
+          message += `\n\n(Searching this area again will be harder. Chance: ${Math.round(nextChance * 100)}%)`;
+        } else {
+          message += `\n\n(This area has been thoroughly searched. You won't find anything else here.)`;
+        }
+      }
+    }
+
+    return message;
+  }
+
   getInventory(): string {
     const items = this.player.getInventory();
     if (items.length === 0) {
@@ -361,8 +697,8 @@ Position: (${p.getPosition().x}, ${p.getPosition().y})
     const mapHeight = this.map.getHeight();
 
     let mapStr = '\n=== DISCOVERED MAP ===\n';
-    mapStr += 'Legend: @ = You, # = Wall, . = Floor, E = Enemy, ? = Item\n';
-    mapStr += '        B = Bridge, M = Medbay, C = Cargo, Q = Quarters\n\n';
+    mapStr += 'Legend: @ = You, # = Wall, . = Floor, + = Door, E = Enemy, ? = Item\n';
+    mapStr += '        B = Bridge, M = Medbay, C = Cargo, Q = Quarters, N = Engineering\n\n';
 
     for (let y = 0; y < mapHeight; y++) {
       for (let x = 0; x < mapWidth; x++) {
@@ -387,6 +723,7 @@ Position: (${p.getPosition().x}, ${p.getPosition().y})
             case TileType.QUARTERS: mapStr += 'Q'; break;
             case TileType.ENGINEERING: mapStr += 'N'; break;
             case TileType.AIRLOCK: mapStr += 'A'; break;
+            case TileType.DOOR: mapStr += '+'; break;
             default: mapStr += '.';
           }
         }
@@ -404,5 +741,40 @@ Position: (${p.getPosition().x}, ${p.getPosition().y})
 
   isGameOver(): boolean {
     return this.state.gameOver;
+  }
+
+  private getNexusTaunt(): string {
+    this.turnCounter++;
+
+    if (!this.nexusTaunts.shouldTaunt(this.turnCounter)) {
+      return '';
+    }
+
+    const inventory = this.player.getInventory();
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    const context = {
+      playerHealth: this.player.getHealth(),
+      playerMaxHealth: this.player.getMaxHealth(),
+      hasKeycardAlpha: inventory.some(item => item.id === 'keycard_alpha'),
+      hasKeycardBeta: inventory.some(item => item.id === 'keycard_beta'),
+      inCombat: this.state.inCombat,
+      currentRoomType: tile?.type as string
+    };
+
+    const taunt = this.nexusTaunts.getTaunt(context);
+    return '\n' + taunt + '\n';
+  }
+
+  private getRandomEvent(): string {
+    const healthPercent = this.player.getHealth() / this.player.getMaxHealth();
+
+    if (!this.randomEvents.shouldTriggerEvent(this.turnCounter, healthPercent)) {
+      return '';
+    }
+
+    const event = this.randomEvents.getRandomEvent(healthPercent);
+    return '\n' + event.message + '\n';
   }
 }
