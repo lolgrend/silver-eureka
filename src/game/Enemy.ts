@@ -78,20 +78,6 @@ export class EnemyFactory {
       strength: 5,
       xpReward: 18
     },
-    {
-      name: 'Corrupted Crew Officer',
-      description: 'What was once a station officer. NEXUS\'s neural interface has transformed them into something... else. Cables sprout from their skull.',
-      maxHealth: 26,
-      strength: 5,
-      xpReward: 21
-    },
-    {
-      name: 'Alien Hunter-Form',
-      description: 'A creature from Planet X-442, evolved for predation. Chitinous armor covers its muscular frame.',
-      maxHealth: 30,
-      strength: 6,
-      xpReward: 24
-    },
 
     // ELITE ENEMIES (Very Hard)
     {

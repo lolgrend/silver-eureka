@@ -13,6 +13,18 @@ export interface Terminal {
   rewardMessage?: string; // Message shown when successfully hacked
 }
 
+export interface Puzzle {
+  id: string;
+  name: string;
+  type: 'sequence' | 'physics' | 'chemistry' | 'math' | 'engineering';
+  question: string;
+  hint?: string;
+  answer: string; // Correct answer
+  reward?: Item;
+  rewardMessage?: string;
+  isSolved: boolean;
+}
+
 export interface Tile {
   type: TileType;
   description: string;
@@ -22,6 +34,7 @@ export interface Tile {
   searchCount: number; // Tracks how many times this tile has been searched
   hasShutdownPanel?: boolean; // Marks Engineering tile with emergency shutdown
   terminal?: Terminal; // Hackable terminal
+  puzzle?: Puzzle; // Solvable puzzle for rewards
 }
 
 export enum TileType {

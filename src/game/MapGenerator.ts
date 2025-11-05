@@ -2,6 +2,7 @@ import { SeededRandom } from './SeededRandom';
 import { Tile, TileType, Position, Terminal } from './types';
 import { EnemyFactory } from './Enemy';
 import { ItemFactory } from './Story';
+import { PuzzleFactory } from './PuzzleSystem';
 
 export class MapGenerator {
   private rng: SeededRandom;
@@ -45,6 +46,9 @@ export class MapGenerator {
 
     // Place hackable terminals
     this.placeTerminals();
+
+    // Place puzzles
+    this.placePuzzles();
   }
 
   private generateRooms(): void {
@@ -536,6 +540,42 @@ their growth. We've created something... terrible."
 In the medical supply locker, you find emergency equipment.
 `
         };
+      }
+    }
+  }
+
+  private placePuzzles(): void {
+    // Find suitable locations for puzzles (corridors, rooms, not occupied by other things)
+    const suitableTiles: Position[] = [];
+
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const pos = { x, y };
+        const tile = this.map.get(this.posKey(pos));
+
+        // Puzzles can be in corridors, rooms, or any non-wall tile
+        // But not where there's already terminal, shutdown panel, enemy, or item
+        if (tile &&
+            tile.type !== TileType.WALL &&
+            !tile.terminal &&
+            !tile.hasShutdownPanel &&
+            !tile.enemy &&
+            !tile.item) {
+          suitableTiles.push(pos);
+        }
+      }
+    }
+
+    // Place 4-6 puzzles around the station
+    const numPuzzles = this.rng.nextInt(4, 6);
+
+    for (let i = 0; i < Math.min(numPuzzles, suitableTiles.length); i++) {
+      const puzzleIndex = this.rng.nextInt(0, suitableTiles.length - 1);
+      const puzzlePos = suitableTiles.splice(puzzleIndex, 1)[0];
+      const tile = this.map.get(this.posKey(puzzlePos));
+
+      if (tile) {
+        tile.puzzle = PuzzleFactory.createRandom(this.rng);
       }
     }
   }

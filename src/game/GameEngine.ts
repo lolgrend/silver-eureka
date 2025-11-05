@@ -134,6 +134,16 @@ Good luck, survivor. You're going to need it...
       }
     }
 
+    if (tile.puzzle) {
+      desc += `\n[PUZZLE] ${tile.puzzle.name}\n`;
+      if (tile.puzzle.isSolved) {
+        desc += `    Status: SOLVED - Already completed.\n`;
+      } else {
+        desc += `    Status: UNSOLVED - Can you figure it out?\n`;
+        desc += `    Type 'solve <answer>' to attempt solution.\n`;
+      }
+    }
+
     return desc;
   }
 
@@ -377,6 +387,69 @@ Good luck, survivor. You're going to need it...
     }
 
     return `You cannot read ${item.name}.`;
+  }
+
+  solve(answer: string): string {
+    if (this.state.gameOver) {
+      return 'Game is over.';
+    }
+
+    if (this.state.inCombat) {
+      return 'You cannot solve puzzles while in combat! Focus on the threat!';
+    }
+
+    const pos = this.player.getPosition();
+    const tile = this.map.getTile(pos);
+
+    if (!tile || !tile.puzzle) {
+      return 'There is no puzzle here to solve.';
+    }
+
+    const puzzle = tile.puzzle;
+
+    if (puzzle.isSolved) {
+      return `This puzzle has already been solved. Nothing more to gain here.`;
+    }
+
+    // Check if answer is provided
+    if (!answer || answer.trim().length === 0) {
+      return `
+[${puzzle.name}]
+
+${puzzle.question}
+
+Type: solve <answer>
+`;
+    }
+
+    // Normalize answer (trim, lowercase, remove spaces)
+    const attemptedAnswer = answer.trim().toLowerCase().replace(/\s+/g, '');
+    const correctAnswer = puzzle.answer.toLowerCase().replace(/\s+/g, '');
+
+    if (attemptedAnswer !== correctAnswer) {
+      return `
+[INCORRECT]
+Your answer: "${answer}"
+
+That's not correct. Try again!
+
+${puzzle.hint ? `Hint: ${puzzle.hint}` : 'Think carefully about the problem.'}
+`;
+    }
+
+    // Correct answer!
+    puzzle.isSolved = true;
+
+    let msg = puzzle.rewardMessage || '[PUZZLE SOLVED!]';
+
+    // Give reward if available
+    if (puzzle.reward) {
+      this.player.addItem(puzzle.reward);
+      msg += `\n\nYou obtained: ${puzzle.reward.name}\n`;
+      msg += `${puzzle.reward.description}`;
+    }
+
+    return msg;
   }
 
   hack(password: string): string {

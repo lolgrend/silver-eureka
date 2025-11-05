@@ -124,6 +124,8 @@ export class WebServer {
         return arg ? game.readItem(arg) : 'Read what? (e.g., "read log")';
       case 'search':
         return game.search();
+      case 'solve':
+        return game.solve(arg);
       case 'hack':
         return arg ? game.hack(arg) : 'Usage: hack <password>\nFind passwords in data logs.';
       case 'shutdown':
@@ -149,6 +151,7 @@ Movement:
 
 Exploration:
   search         - Search the current area for hidden items
+  solve <answer> - Solve a puzzle (science/math challenges)
   hack <password> - Hack a terminal (find passwords in data logs)
 
 Inventory:
