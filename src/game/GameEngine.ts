@@ -139,7 +139,8 @@ Good luck, survivor. You're going to need it...
       if (tile.puzzle.isSolved) {
         desc += `    Status: SOLVED - Already completed.\n`;
       } else {
-        desc += `    Status: UNSOLVED - Can you figure it out?\n`;
+        desc += `    Status: UNSOLVED\n\n`;
+        desc += `${tile.puzzle.question}\n\n`;
         desc += `    Type 'solve <answer>' to attempt solution.\n`;
       }
     }
